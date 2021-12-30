@@ -6,10 +6,11 @@ const {
   feedIdRegex,
   blobIdRegex
 } = require('ssb-ref')
-const ssb = require('./ssb')
+
+let ssb
 
 module.exports = function makeSsbFetch(options = {}) {
-  // const { appname } = options
+  ssb = require('./ssb')(options)
 
   const onClose = async () => undefined
   const fetch = makeFetch(ssbFetch)
@@ -18,48 +19,41 @@ module.exports = function makeSsbFetch(options = {}) {
   return fetch
 }
 
-function ssbFetch({ url, headers: rawHeaders, method, signal, body }) {
-  return new Promise(resolve => {
-    const responseHeaders = new Headers(rawHeaders || {})
+async function ssbFetch({ url, headers: rawHeaders, method, signal, body }) {
+  const responseHeaders = new Headers(rawHeaders || {})
 
-    const isSsbURL = url.startsWith('ssb://')
-    if (!isSsbURL) throw new Error('ssb url should be ssb://...')
+  const isSsbURL = url.startsWith('ssb://')
+  if (!isSsbURL) throw new Error('ssb url should be ssb://...')
 
-    const msgId = url.split('ssb://')[1]
-    const isSsbId = msgId.match(msgIdRegex)
+  const msgId = url.split('ssb://')[1]
+  const isSsbId = msgId.match(msgIdRegex)
 
-    const shouldIntercept = isSsbURL && msgId && isSsbId
-    if (!shouldIntercept) throw new Error('Invalid ssb uri')
+  const shouldIntercept = isSsbURL && msgId && isSsbId
+  if (!shouldIntercept) throw new Error('Invalid ssb uri')
 
-    if (method === 'GET') {
-      ssb.then(sbot => {
-        responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
+  const sbot = await ssb
 
-        sbot.get({ id: msgId, private: true, meta: true }, (error, data) => {
-          if (error) {
-            if (error.name === 'NotFoundError')
-              resolve({
-                statusCode: 404,
-                headers: responseHeaders,
-                data: intoAsyncIterable(JSON.stringify(error))
-              })
-            else
-              resolve({
-                statusCode: 500,
-                headers: responseHeaders,
-                data: intoAsyncIterable(JSON.stringify(error))
-              })
-          } else {
-            resolve({
-              statusCode: 200,
-              headers: responseHeaders,
-              data: intoAsyncIterable(JSON.stringify(data))
-            })
-          }
-        })
+  if (method === 'GET') {
+    responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
+
+    let statusCode = 200
+
+    const data = await new Promise((resolve, reject) => {
+      sbot.get({ id: msgId, private: true, meta: true }, (error, data) => {
+        if (error) {
+          if (error.name === 'NotFoundError') statusCode = 404
+          else statusCode = 500
+          reject(error)
+        } else resolve(data)
       })
+    })
+
+    return {
+      statusCode,
+      headers: responseHeaders,
+      data: intoAsyncIterable(JSON.stringify(data))
     }
-  })
+  }
 }
 
 async function* intoAsyncIterable(data) {
