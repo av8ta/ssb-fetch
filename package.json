@@ -1,6 +1,6 @@
 {
   "name": "ssb-fetch",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "use fetch to get ssb messages",
   "main": "index.js",
   "scripts": {
@@ -16,9 +16,11 @@
   "author": "av8ta",
   "license": "MIT",
   "dependencies": {
+    "debug": "^4.3.3",
     "fetch-headers": "^2.0.0",
     "make-fetch": "^2.3.1",
     "ssb-client": "^4.9.0",
+    "ssb-config": "^3.4.6",
     "ssb-ref": "^2.16.0"
   },
   "devDependencies": {
