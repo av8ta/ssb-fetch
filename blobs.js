@@ -1,17 +1,15 @@
-const URL = require('url')
 const pull = require('pull-stream')
 const identify = require('pull-identify-filetype')
 
-module.exports = (sbot, url) => {
-  const parsed = URL.parse(url, true)
-  const hash = decodeURIComponent(parsed.pathname.slice(1))
+module.exports = (sbot, id) => {
   let fileType
 
   return new Promise((resolve, reject) => {
     pull(
-      sbot.blobs.get(hash),
+      sbot.blobs.get(id),
       identify(type => {
         if (type) fileType = type
+        // todo: video & audio mimetypes are undefined
       }),
       pull.collect((error, blob) => {
         if (error) reject(error)
