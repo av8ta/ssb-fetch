@@ -1,44 +1,100 @@
-const { isSSBURI, toMessageSigil, decompose } = require('ssb-uri2')
-const { isMsgId, isBlobId } = require('ssb-ref')
+const {
+  decompose,
+  isSSBURI,
+  fromMessageSigil,
+  fromBlobSigil,
+  fromFeedSigil,
+  toMessageSigil,
+  toBlobSigil,
+  toFeedSigil
+} = require('ssb-uri2')
+const { isMsgId, isBlobId, isFeedId } = require('ssb-ref')
+const debug = require('debug')('ssb-fetch')
 
 module.exports = {
-  parse: function (url) {
-    // if (!isSSBURI(url)) throw new Error(`url is not a valid ssb uri: ${url}`) // throwing on valid uri
+  sigilToUrlSafe: id => {
+    const msgKey = isMsgId(id)
+    const blobKey = isBlobId(id)
+    const feedKey = isFeedId(id)
+    // prettier-ignore
+    const msgType = msgKey  ? 'msgKey'
+                  : blobKey ? 'blobKey' 
+                  : feedKey ? 'feedKey' 
+                  : null
 
-    const decomposed = decompose(url)
+    debug('sigilToUrlSafe msgType:', msgType, id)
 
-    switch (decomposed.type) {
-      case 'message':
-        const message = {
-          ...decomposed,
-          id: toMessageSigil(url)
-        }
-        if (!isMsgId(message.id))
-          throw new Error(
-            `message uri did not parse correctly, id: ${message.id}`
-          )
-        return message
-      case 'blob':
-        const blob = {
-          ...decomposed,
-          id: urlToBlobId(url)
-          // id: toBlobSigil(url) // returning null
-          // id: `&${decomposed.data}.${decomposed.format}` // data is not complete - appears to be split at a slash near the end so is missing characters after that slash
-        }
-        if (!isBlobId(blob.id))
-          throw new Error(`blob uri did not parse correctly, id: ${blob.id}`)
-        return blob
+    switch (msgType) {
+      case 'msgKey':
+        return fromMessageSigil(id)
+      case 'blobKey':
+        return fromBlobSigil(id)
+      case 'feedKey':
+        return fromFeedSigil(id)
       default:
-        return decomposed
+        throw new Error(`Invalid ssb id: ${id}`)
+    }
+  },
+  parseUri: url => {
+    if (!isSSBURI(url)) throw new Error(`url is not a valid ssb uri: ${url}`)
+
+    try {
+      const decomposed = decompose(url)
+      debug('decomposed', decomposed)
+
+      switch (decomposed.type) {
+        case 'message':
+          const message = {
+            ...decomposed,
+            id: toMessageSigil(url)
+          }
+          console.log('parsed ', message)
+          if (!isMsgId(message.id)) {
+            const error = uriError(message)
+            throw new Error(error)
+          }
+          debug('parsed uri:', message)
+          return message
+
+        case 'blob':
+          const blob = {
+            ...decomposed,
+            id: toBlobSigil(url)
+          }
+          debug('parsed uri:', blob)
+          if (!isBlobId(blob.id)) {
+            const error = uriError(blob)
+            throw new Error(error)
+          }
+          return blob
+
+        case 'feed':
+          const feed = {
+            ...decomposed,
+            id: toFeedSigil(url)
+          }
+          debug('parsed uri:', feed)
+          if (!isFeedId(feed.id)) {
+            const error = uriError(feed)
+            throw new Error(error)
+          }
+          return feed
+
+        default:
+          return decomposed
+      }
+    } catch (error) {
+      debug('Error parsing url', error)
     }
   }
 }
 
-// todo: decompose is stripping off some data from the hash id
-// appears to be slicing at a later slash
-// likely a bug in ssb-uri2
-function urlToBlobId(url) {
-  const { format } = decompose(url)
-  const data = url.split(`/${format}/`)[1]
-  return `&${data}.${format}`
+function uriError(parsed) {
+  const spec = 'https://github.com/ssb-ngi-pointer/ssb-uri-spec'
+  const error = `Invalid ssb link ${JSON.stringify(parsed, null, 2)}`
+  return `
+${error}
+
+See ${spec}
+    `
 }
