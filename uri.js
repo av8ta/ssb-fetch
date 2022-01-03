@@ -8,93 +8,120 @@ const {
   toBlobSigil,
   toFeedSigil
 } = require('ssb-uri2')
-const { isMsgId, isBlobId, isFeedId } = require('ssb-ref')
+const {
+  isMsgId,
+  isBlobId,
+  isFeedId,
+  isMsgType,
+  isBlobType,
+  isFeedType,
+  extract: extractSSBref
+} = require('ssb-ref')
 const debug = require('debug')('ssb-fetch')
 
 module.exports = {
-  sigilToUrlSafe: id => {
-    const msgKey = isMsgId(id)
-    const blobKey = isBlobId(id)
-    const feedKey = isFeedId(id)
-    // prettier-ignore
-    const msgType = msgKey  ? 'msgKey'
-                  : blobKey ? 'blobKey' 
-                  : feedKey ? 'feedKey' 
-                  : null
+  looksLikeLegacySSB,
+  convertLegacySSB,
+  sigilToUrlSafe,
+  parseUri
+}
 
-    debug('sigilToUrlSafe msgType:', msgType, id)
+function sigilToUrlSafe(id) {
+  const msgKey = isMsgId(id)
+  const blobKey = isBlobId(id)
+  const feedKey = isFeedId(id)
+  // prettier-ignore
+  const msgType = msgKey  ? 'msgKey'
+                : blobKey ? 'blobKey' 
+                : feedKey ? 'feedKey' 
+                : null
 
-    switch (msgType) {
-      case 'msgKey':
-        return fromMessageSigil(id)
-      case 'blobKey':
-        return fromBlobSigil(id)
-      case 'feedKey':
-        return fromFeedSigil(id)
-      default:
-        throw new Error(`Invalid ssb id: ${id}`)
-    }
-  },
-  parseUri: url => {
-    if (!isSSBURI(url)) throw new Error(`url is not a valid ssb uri: ${url}`)
+  debug('sigilToUrlSafe msgType:', msgType, id)
 
-    try {
-      const decomposed = decompose(url)
-      debug('decomposed', decomposed)
-
-      switch (decomposed.type) {
-        case 'message':
-          const message = {
-            ...decomposed,
-            id: toMessageSigil(url)
-          }
-          console.log('parsed ', message)
-          if (!isMsgId(message.id)) {
-            const error = uriError(message)
-            throw new Error(error)
-          }
-          debug('parsed uri:', message)
-          return message
-
-        case 'blob':
-          const blob = {
-            ...decomposed,
-            id: toBlobSigil(url)
-          }
-          debug('parsed uri:', blob)
-          if (!isBlobId(blob.id)) {
-            const error = uriError(blob)
-            throw new Error(error)
-          }
-          return blob
-
-        case 'feed':
-          const feed = {
-            ...decomposed,
-            id: toFeedSigil(url)
-          }
-          debug('parsed uri:', feed)
-          if (!isFeedId(feed.id)) {
-            const error = uriError(feed)
-            throw new Error(error)
-          }
-          return feed
-
-        default:
-          return decomposed
-      }
-    } catch (error) {
-      debug('Error parsing url', error)
-    }
+  switch (msgType) {
+    case 'msgKey':
+      return fromMessageSigil(id)
+    case 'blobKey':
+      return fromBlobSigil(id)
+    case 'feedKey':
+      return fromFeedSigil(id)
+    default:
+      throw new Error(`Invalid ssb id: ${id}`)
   }
 }
 
-function uriError(parsed) {
+function parseUri(url) {
+  try {
+    if (!isSSBURI(url)) throw new Error(uriError(url))
+
+    /** ssb:// errors with decompose but ssb: doesn't */
+    if (url.startsWith('ssb://')) url = url.split('ssb://').join('ssb:')
+
+    var decomposed = decompose(url)
+    debug('decomposed', decomposed)
+
+    switch (decomposed.type) {
+      case 'message':
+        return {
+          ...decomposed,
+          id: toMessageSigil(url)
+        }
+
+      case 'blob':
+        return {
+          ...decomposed,
+          id: toBlobSigil(url)
+        }
+
+      case 'feed':
+        return {
+          ...decomposed,
+          id: toFeedSigil(url)
+        }
+      default:
+        throw new Error(uriError({ url, decomposed }))
+    }
+  } catch (error) {
+    throw new Error(uriError({ url, decomposed, error }))
+  }
+}
+
+function uriError(objs) {
   const spec = 'https://github.com/ssb-ngi-pointer/ssb-uri-spec'
-  const error = `Invalid ssb link ${JSON.stringify(parsed, null, 2)}`
+  const error = `Invalid ssb link ${JSON.stringify(objs, null, 2)}`
   return `
 ${error}
 
 See ${spec}
     `
+}
+
+function looksLikeLegacySSB(str) {
+  if (!str.startsWith('%') && !str.startsWith('&') && !str.startsWith('@'))
+    return false
+
+  if (isMsgType(str)) return true
+  if (isBlobType(str)) return true
+  if (isFeedType(str)) return true
+  return false
+}
+
+function convertLegacySSB(url) {
+  const uri = sigilToUrlSafe(extractId(url))
+  return standardiseSSBuri(uri)
+}
+
+/** prefer ssb:// uri */
+function standardiseSSBuri(url) {
+  if (!url.startsWith('ssb://') && url.startsWith('ssb:')) {
+    const path = url.split('ssb:')
+    return `ssb://${path.slice(1)}`
+  }
+  return url
+}
+
+function extractId(url) {
+  const extracted = extractSSBref(url)
+  console.debug('debug extractSSBref', extracted)
+  return extracted
 }

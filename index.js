@@ -1,7 +1,7 @@
 const makeFetch = require('make-fetch')
 const getBlob = require('./blobs')
 const mime = require('mime-types')
-const { parseUri, sigilToUrlSafe } = require('./uri')
+const { parseUri, looksLikeLegacySSB, convertLegacySSB } = require('./uri')
 const debug = require('debug')('ssb-fetch')
 const bugReport = require('./bugs')
 const FileType = require('file-type')
@@ -9,7 +9,13 @@ const Accept = require('@hapi/accept')
 
 let ssb
 
-module.exports = function makeSsbFetch(options = {}) {
+module.exports = {
+  makeSsbFetch,
+  convertLegacySSB,
+  looksLikeLegacySSB
+}
+
+function makeSsbFetch(options = {}) {
   ssb = require('./ssb')(options)
   const onClose = async () => undefined
   const fetch = makeFetch(ssbFetch)
@@ -36,9 +42,6 @@ async function ssbFetch(resource) {
     throw new Error(
       'Invalid protocol, must be ssb:   https://github.com/ssb-ngi-pointer/ssb-uri-spec'
     )
-
-  const ssbSigil = url.startsWith('ssb:legacy:')
-  if (ssbSigil) return convertLegacyResponse(url, rawHeaders)
 
   const { type, format, id } = parseUrl(url)
 
@@ -123,67 +126,17 @@ async function ssbFetch(resource) {
 }
 
 function parseUrl(url) {
+  let parsed
   try {
-    const parsed = parseUri(url)
+    parsed = parseUri(url)
+    debug('parseUrl', parsed)
     const { type, format, id } = parsed
     const shouldIntercept = type && format && id
     if (!shouldIntercept) throw new Error(`Invalid ssb url ${url}`)
     return parsed
   } catch (error) {
-    debug('error parsing ssb uri', error)
+    debug('error parsing ssb uri', url, parsed, error)
     throw error
-  }
-}
-
-/**
- * todo: make this service off by default in agregore ssb protocol config
- * that way it won't be abused! we want people using the correct
- * url in their code. it's very convenient to paste in an id from the database though
- *
- * in agregore:   ssb:legacy:<ssb msg id>
- * e.g.           ssb:legacy:&P7VkQqJZPkFFoEScB+37dBqOZXWLmy5dIrvICdEozcU=.sha256
- *
- * anchor tag returned to click on when text/html is in accept header
- * application/json in the accept header returns:
- *  {
- *    "id": "&P7VkQqJZPkFFoEScB+37dBqOZXWLmy5dIrvICdEozcU=.sha256",
- *    "url": "ssb:blob/sha256/P7VkQqJZPkFFoEScB-37dBqOZXWLmy5dIrvICdEozcU="
- *  }
- * */
-function convertLegacyResponse(url, headers) {
-  const id = url.split('ssb:legacy:')[1]
-  const ssbUrl = sigilToUrlSafe(id)
-
-  const capabilities = ['text/html', 'application/json']
-  let mediaType = choosePrefferedMediaType(headers, capabilities)
-  if (!mediaType) mediaType = 'application/octet-stream'
-  debug('chosen mediaType', mediaType)
-
-  if (mediaType === 'application/json')
-    return {
-      statusCode: 303,
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8'
-      },
-      data: intoAsyncIterable(JSON.stringify({ id, url: ssbUrl }, null, 2))
-    }
-
-  if (mediaType === 'text/html') {
-    const link = `<a href="${ssbUrl}">${ssbUrl}</a>`
-    debug(`redirect link ${ssbUrl}`)
-
-    return {
-      statusCode: 303,
-      headers: {
-        'Content-Type': 'text/html'
-        // 'Content-Type': 'application/json; charset=utf-8'
-      },
-      data: intoAsyncIterable(`<!DOCTYPE html>
-      <html lang="en">
-        <head></head>
-          <body>${link}</body>
-      </html>`)
-    }
   }
 }
 
