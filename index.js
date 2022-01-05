@@ -52,17 +52,39 @@ async function ssbFetch(resource) {
 
     switch (type) {
       case 'message':
-        const data = await new Promise(resolve => {
-          responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
+        let data = await new Promise(resolve => {
           sbot.get({ id, private: true, meta: true }, (error, data) => {
             if (error) {
               debug('error', error)
               statusCode = 500
               if (error.name === 'NotFoundError') statusCode = 404
-              resolve(`NotFoundError:Key not found in database [${id}]`)
-            } else resolve(JSON.stringify(data))
+              reject(`NotFoundError:Key not found in database [${id}]`)
+            } else resolve(data)
           })
         })
+
+        // rawHeaders.accept = rawHeaders.accept += ', text/markdown'
+        // rawHeaders.accept = rawHeaders.accept += ', application/json, text/markdown'
+        const mediaType = choosePrefferedMediaType(rawHeaders, [
+          'application/json',
+          'text/markdown'
+        ])
+
+        debug('choosePrefferedMediaType:', mediaType)
+        if (
+          (!mediaType || mediaType === 'text/html') &&
+          data.value?.content?.type === 'post' &&
+          data.value?.content?.text
+        ) {
+          responseHeaders['Content-Type'] = 'text/markdown'
+          data = data.value.content.text
+        } else {
+          responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
+          data = JSON.stringify(data)
+        }
+
+        debug('responseHeaders', responseHeaders)
+        debug('response', data)
 
         return {
           statusCode,
@@ -141,7 +163,6 @@ function parseUrl(url) {
 }
 
 function choosePrefferedMediaType(headers, capabilities = []) {
-  // headers.accept = headers.accept += ', application/json'
   const accept = Accept.parseAll(headers).mediaTypes
   debug('Acceptable MediaTypes', accept)
 

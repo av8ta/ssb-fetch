@@ -107,8 +107,7 @@ function looksLikeLegacySSB(str) {
 }
 
 function convertLegacySSB(url) {
-  const uri = sigilToUrlSafe(extractId(url))
-  return standardiseSSBuri(uri)
+  return standardiseSSBuri(sigilToUrlSafe(extractSSBref(url)))
 }
 
 /** prefer ssb:// uri */
@@ -117,11 +116,6 @@ function standardiseSSBuri(url) {
     const path = url.split('ssb:')
     return `ssb://${path.slice(1)}`
   }
-  return url
-}
 
-function extractId(url) {
-  const extracted = extractSSBref(url)
-  console.debug('debug extractSSBref', extracted)
-  return extracted
+  return url
 }
