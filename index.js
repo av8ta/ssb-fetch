@@ -58,10 +58,17 @@ async function ssbFetch(resource) {
               debug('error', error)
               statusCode = 500
               if (error.name === 'NotFoundError') statusCode = 404
-              reject(`NotFoundError:Key not found in database [${id}]`)
+              resolve(`NotFoundError:Key not found in database [${id}]`)
             } else resolve(data)
           })
         })
+
+        if (isString(data) && data.startsWith('NotFoundError'))
+          return {
+            statusCode,
+            headers: responseHeaders,
+            data: intoAsyncIterable(data)
+          }
 
         // rawHeaders.accept = rawHeaders.accept += ', text/markdown'
         // rawHeaders.accept = rawHeaders.accept += ', application/json, text/markdown'
@@ -145,6 +152,10 @@ async function ssbFetch(resource) {
         }
     }
   }
+}
+
+function isString(s) {
+  return !!(typeof s === 'string' || s instanceof String)
 }
 
 function parseUrl(url) {
