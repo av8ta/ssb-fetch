@@ -32,6 +32,9 @@
   },
   "devDependencies": {
     "ava": "^4.0.1",
-    "scuttle-testbot": "^1.9.1"
+    "hash.js": "^1.1.7",
+    "pull-file": "^1.1.0",
+    "scuttle-testbot": "^1.9.1",
+    "ssb-blobs": "^2.0.1"
   }
 }
