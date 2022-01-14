@@ -51,8 +51,10 @@ test.serial('fetch message json', async t => {
   })
 
   const response = await fetch(convertLegacySSB(messageId))
+  const contentType = response.headers.get('content-type')
   const fetchedMessage = await response.json()
 
   t.is(response.status, 200)
+  t.is(contentType, 'application/json; charset=utf-8')
   t.is(fetchedMessage.value.content.text, '# [@bob] wrote a test message')
 })
