@@ -2,10 +2,13 @@ const makeFetch = require('make-fetch')
 const getBlob = require('./blobs')
 const mime = require('mime-types')
 const { parseUri, looksLikeLegacySSB, convertLegacySSB } = require('./uri')
-const debug = require('debug')('ssb-fetch')
+const debugUri = require('debug')('ssb-fetch:uri')
+const debugHeaders = require('debug')('ssb-fetch:headers')
+const debugServing = require('debug')('ssb-fetch:serving')
 const bugReport = require('./bugs')
 const FileType = require('file-type')
 const Accept = require('@hapi/accept')
+const Headers = require('fetch-headers')
 
 let ssb
 
@@ -15,8 +18,16 @@ module.exports = {
   looksLikeLegacySSB
 }
 
+/**
+ * options are either as per ssb-config: https://github.com/ssbc/ssb-config#configuration
+ *
+ * or you can pass an sbot instance:
+ * {
+ *    sbot: your-sbot-instance
+ * }
+ */
 function makeSsbFetch(options = {}) {
-  ssb = require('./ssb')(options)
+  ssb = options.sbot ? options.sbot : require('./ssb')(options)
   const onClose = async () => undefined
   const fetch = makeFetch(ssbFetch)
   fetch.close = () => onClose()
@@ -33,8 +44,10 @@ async function ssbFetch(resource) {
     session,
     referrer
   } = resource
-  debug('resource', resource)
+  debugServing('resource', resource)
 
+  const h = new Headers(rawHeaders || {})
+  debugHeaders('new Headers(rawHeaders || {})=========>', h, '<==========')
   const responseHeaders = {}
 
   const isSsbURL = url.startsWith('ssb:')
@@ -55,7 +68,7 @@ async function ssbFetch(resource) {
         let data = await new Promise(resolve => {
           sbot.get({ id, private: true, meta: true }, (error, data) => {
             if (error) {
-              debug('error', error)
+              debugServing('error', error)
               statusCode = 500
               if (error.name === 'NotFoundError') statusCode = 404
               resolve(`NotFoundError:Key not found in database [${id}]`)
@@ -70,28 +83,39 @@ async function ssbFetch(resource) {
             data: intoAsyncIterable(data)
           }
 
+        // rawHeaders.accept = rawHeaders.accept += ', text/json'
         // rawHeaders.accept = rawHeaders.accept += ', text/markdown'
+        // rawHeaders.accept = rawHeaders.accept += ', application/json'
         // rawHeaders.accept = rawHeaders.accept += ', application/json, text/markdown'
+        debugHeaders('rawHeaders', rawHeaders)
         const mediaType = choosePrefferedMediaType(rawHeaders, [
           'application/json',
+          'text/json',
           'text/markdown'
+          // 'text/html'
         ])
 
-        debug('choosePrefferedMediaType:', mediaType)
-        if (
-          (!mediaType || mediaType === 'text/html') &&
-          data.value?.content?.type === 'post' &&
-          data.value?.content?.text
-        ) {
+        debugHeaders('choosePrefferedMediaType:', mediaType)
+        debugHeaders('wantsMarkdown', wantsMarkdown(mediaType))
+        debugHeaders('wantsText', wantsText(mediaType))
+        debugHeaders('wantsJson', wantsJson(mediaType))
+        debugHeaders('isPost', isPost(data))
+        // prettier-ignore
+        debugHeaders('wantsMarkdown && isPost', wantsMarkdown(mediaType) && isPost(data))
+
+        if (wantsMarkdown(mediaType) && isPost(data)) {
+          // responseHeaders['Content-Type'] = 'text/markdown+ssb'
           responseHeaders['Content-Type'] = 'text/markdown'
           data = data.value.content.text
-        } else {
-          responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
-          data = JSON.stringify(data)
-        }
+        } else if (wantsText(mediaType))
+          responseHeaders['Content-Type'] = 'text/json'
+        else responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
 
-        debug('responseHeaders', responseHeaders)
-        debug('response', data)
+        data = JSON.stringify(data)
+        // }
+
+        debugHeaders('responseHeaders', responseHeaders)
+        debugServing('response', data)
 
         return {
           statusCode,
@@ -119,8 +143,8 @@ async function ssbFetch(resource) {
           responseHeaders['Keep-Alive'] = 'timeout=5'
           responseHeaders['Transfer-Encoding'] = 'chunked'
 
-          debug('mimetype', mimetype)
-          debug('responseHeaders', responseHeaders)
+          debugHeaders('mimetype', mimetype)
+          debugHeaders('responseHeaders', responseHeaders)
 
           return {
             statusCode,
@@ -134,7 +158,7 @@ async function ssbFetch(resource) {
             statusCode = 404
             data = `NotFoundError:Key not found in database [${id}]`
           } else data = `Server error. Sorry about that! ${bugReport}`
-          debug(error)
+          debugServing(error)
           return {
             statusCode,
             headers: { 'Content-Type': 'text/html' },
@@ -154,6 +178,24 @@ async function ssbFetch(resource) {
   }
 }
 
+function wantsMarkdown(mediaType) {
+  return (
+    mediaType && (mediaType.includes('markdown') || mediaType.includes('html'))
+  )
+}
+function wantsJson(mediaType) {
+  return mediaType && mediaType.includes('json')
+}
+function wantsText(mediaType) {
+  return mediaType && mediaType.includes('text/json')
+}
+
+function isPost(message) {
+  return !!(
+    message.value?.content?.type === 'post' && message.value?.content?.text
+  )
+}
+
 function isString(s) {
   return !!(typeof s === 'string' || s instanceof String)
 }
@@ -162,20 +204,22 @@ function parseUrl(url) {
   let parsed
   try {
     parsed = parseUri(url)
-    debug('parseUrl', parsed)
+    debugUri('parseUrl', parsed)
     const { type, format, id } = parsed
     const shouldIntercept = type && format && id
     if (!shouldIntercept) throw new Error(`Invalid ssb url ${url}`)
     return parsed
   } catch (error) {
-    debug('error parsing ssb uri', url, parsed, error)
+    debugUri('error parsing ssb uri', url, parsed, error)
     throw error
   }
 }
 
 function choosePrefferedMediaType(headers, capabilities = []) {
+  debugHeaders('choose......', headers)
+  // headers = 'text/json' + headers
   const accept = Accept.parseAll(headers).mediaTypes
-  debug('Acceptable MediaTypes', accept)
+  debugHeaders('Acceptable MediaTypes', accept)
 
   let mediaType = false
   accept.forEach(acceptableType => {

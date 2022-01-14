@@ -17,7 +17,7 @@ const {
   isFeedType,
   extract: extractSSBref
 } = require('ssb-ref')
-const debug = require('debug')('ssb-fetch')
+const debug = require('debug')('ssb-fetch:uri')
 
 module.exports = {
   looksLikeLegacySSB,
