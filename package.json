@@ -16,9 +16,7 @@
   "author": "av8ta",
   "license": "MIT",
   "dependencies": {
-    "@hapi/accept": "^5.0.2",
     "debug": "^4.3.3",
-    "fetch-headers": "^2.0.0",
     "file-type": "16.5.1",
     "make-fetch": "^2.3.1",
     "mime-types": "^2.1.34",
