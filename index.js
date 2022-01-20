@@ -79,7 +79,13 @@ async function ssbFetch(resource) {
             data: intoAsyncIterable(data)
           }
 
-        responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
+        /**
+         * return application/json for posts to be rendered in agregore by the ssb extension
+         * otherwise use text/json to render with the agregore json rendering extension
+         * */
+        if (!isPost(data))
+          responseHeaders['Content-Type'] = 'text/json; charset=utf-8'
+        else responseHeaders['Content-Type'] = 'application/json; charset=utf-8'
 
         return {
           statusCode,
@@ -140,6 +146,12 @@ async function ssbFetch(resource) {
         }
     }
   }
+}
+
+function isPost(message) {
+  return !!(
+    message.value?.content?.type === 'post' && message.value?.content?.text
+  )
 }
 
 function isString(s) {
