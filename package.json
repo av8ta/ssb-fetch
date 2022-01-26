@@ -4,8 +4,10 @@
   "description": "use fetch to get ssb messages",
   "main": "index.js",
   "scripts": {
+    "build": "browserify ./index.js -o ./bundle.js -v",
     "test": "ava",
-    "test:watch": "ava --watch"
+    "test:watch": "ava --watch",
+    "proxy": "nodemon proxy.js"
   },
   "keywords": [
     "p2p",
@@ -32,7 +34,9 @@
   },
   "devDependencies": {
     "ava": "^4.0.1",
+    "browserify": "^17.0.0",
     "hash.js": "^1.1.7",
+    "nodemon": "^2.0.15",
     "pull-file": "^1.1.0",
     "scuttle-testbot": "^1.9.1",
     "ssb-blobs": "^2.0.1"
