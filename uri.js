@@ -8,15 +8,7 @@ const {
   toBlobSigil,
   toFeedSigil
 } = require('ssb-uri2')
-const {
-  isMsgId,
-  isBlobId,
-  isFeedId,
-  isMsgType,
-  isBlobType,
-  isFeedType,
-  extract: extractSSBref
-} = require('ssb-ref')
+const { isMsgId, isBlobId, isFeedId, isMsgType, isBlobType, isFeedType, extract: extractSSBref } = require('ssb-ref')
 const debug = require('debug')('ssb-fetch:uri')
 
 module.exports = {
@@ -97,8 +89,7 @@ See ${spec}
 }
 
 function looksLikeLegacySSB(str) {
-  if (!str.startsWith('%') && !str.startsWith('&') && !str.startsWith('@'))
-    return false
+  if (!str.startsWith('%') && !str.startsWith('&') && !str.startsWith('@')) return false
 
   if (isMsgType(str)) return true
   if (isBlobType(str)) return true
