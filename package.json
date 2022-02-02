@@ -1,6 +1,6 @@
 {
   "name": "ssb-fetch",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "use fetch to get ssb messages",
   "main": "index.js",
   "scripts": {

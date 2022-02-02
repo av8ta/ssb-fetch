@@ -6,6 +6,7 @@ const debugServing = require('debug')('ssb-fetch:serving')
 let ssb, api
 
 module.exports = {
+  parseUri,
   makeSsbFetch,
   convertLegacySSB,
   looksLikeLegacySSB

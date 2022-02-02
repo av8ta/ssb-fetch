@@ -24,13 +24,15 @@ module.exports = async ssb => {
 
   return new Promise((resolve, reject) => {
     async function getFeed(id) {
-      if (!aboutLatestValues && !isDb2)
+      if ((!aboutLatestValues || !sbot.backlinks) && !isDb2)
         return {
           statusCode: 404,
           headers: { 'Content-Type': JSON_MIME },
           data: intoAsyncIterable(
             JSON.stringify({
-              error: 'Profiles need ssb-about plugin: https://github.com/ssbc/ssb-about'
+              error:
+                'MissingPlugins: Profiles need ssb-about and ssb-backlinks plugins: https://github.com/ssbc/ssb-about https://github.com/ssbc/ssb-backlinks',
+              plugins: ['ssb-about', 'ssb-backlinks']
             })
           )
         }
@@ -64,7 +66,7 @@ module.exports = async ssb => {
         return {
           statusCode: 200,
           headers: { 'Content-Type': JSON_MIME },
-          data: intoAsyncIterable(JSON.stringify(profile))
+          data: intoAsyncIterable(JSON.stringify({ ...profile, id }))
         }
       } catch (error) {
         const response = errorResponse(error, id)
