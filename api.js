@@ -6,7 +6,6 @@ const pullBlob = require('./blobs')
 const mime = require('mime-types')
 const debug = require('debug')('ssb-fetch')
 const debugHeaders = require('debug')('ssb-fetch:headers')
-const { isPost } = require('./utils')
 
 const JSON_MIME = 'application/json; charset=utf-8'
 
@@ -80,19 +79,11 @@ module.exports = async ssb => {
 
     async function getMessage(options) {
       try {
-        const headers = {}
         const data = await getMsg(options)
-
-        /**
-         * return application/json for posts to be rendered in agregore by the ssb extension
-         * otherwise use text/json to render with the agregore json rendering extension
-         * */
-        if (!isPost(data)) headers['Content-Type'] = 'text/json; charset=utf-8'
-        else headers['Content-Type'] = JSON_MIME
 
         return {
           statusCode: 200,
-          headers,
+          headers: { 'Content-Type': JSON_MIME },
           data: intoAsyncIterable(JSON.stringify(data))
         }
       } catch (error) {
