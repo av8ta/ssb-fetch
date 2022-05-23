@@ -1,6 +1,6 @@
 {
   "name": "ssb-fetch",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "use fetch to get ssb messages",
   "main": "index.js",
   "scripts": {
@@ -19,27 +19,27 @@
   "author": "av8ta",
   "license": "MIT",
   "dependencies": {
-    "debug": "^4.3.3",
+    "debug": "^4.3.4",
     "file-type": "16.5.1",
     "make-fetch": "^2.3.1",
-    "mime-types": "^2.1.34",
+    "mime-types": "^2.1.35",
     "pull-stream": "^3.6.14",
     "ssb-client": "^4.9.0",
     "ssb-config": "^3.4.6",
     "ssb-ref": "^2.16.0",
-    "ssb-uri2": "^1.6.0"
+    "ssb-uri2": "^1.8.1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/av8ta/ssb-fetch/issues"
   },
   "devDependencies": {
-    "ava": "^4.0.1",
+    "ava": "^4.2.0",
     "hash.js": "^1.1.7",
-    "nodemon": "^2.0.15",
-    "prettier": "^2.5.1",
+    "nodemon": "^2.0.16",
+    "prettier": "^2.6.2",
     "pull-file": "^1.1.0",
-    "scuttle-testbot": "^1.9.1",
+    "scuttle-testbot": "^1.10.0",
     "ssb-about": "^2.0.1",
     "ssb-backlinks": "^2.1.1",
     "ssb-blobs": "^2.0.1"
