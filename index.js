@@ -1,5 +1,6 @@
 const makeFetch = require('make-fetch')
 const { parseUri, looksLikeLegacySSB, convertLegacySSB } = require('./uri')
+const { parseRange } = require('./utils')
 const debugUri = require('debug')('ssb-fetch:uri')
 const debugServing = require('debug')('ssb-fetch:serving')
 
@@ -41,13 +42,15 @@ async function ssbFetch(resource) {
   const methods = await api
   const { whoami, getMessage, getBlob, getFeed } = methods
 
+  const range = rawHeaders.range ? parseRange(rawHeaders.range) : undefined
+
   if (method === 'GET') {
     switch (type) {
       case 'message':
         return await getMessage({ id, private: true, meta: true })
 
       case 'blob':
-        return await getBlob(id)
+        return await getBlob(id, range)
 
       case 'feed':
         return await getFeed(id)

@@ -22,17 +22,23 @@ http
         if (body) debug('body', body)
 
         // strip leading / off
-        fetch(url.slice(1))
+        fetch(url.slice(1), { headers })
           .then(r => {
             const contentType = r.headers.get('content-type')
+            const statusCode = headers.range ? 206 : 200
 
-            response.writeHead(200, {
+            response.writeHead(statusCode, {
               'Content-Type': contentType,
               'X-Powered-By': 'ssb-fetch'
             })
 
+            console.info('request headers:', headers, '\n')
+            if (headers.range) console.info('request range:', headers.range, '\n')
+            console.info(`response headers:\n${response._header}`)
+
             if (contentType?.includes('json')) return r.json()
             if (contentType?.includes('text')) return r.text()
+            if (contentType?.includes('application/')) return r.text()
             else {
               response.writeHead(404, {
                 'Content-Type': contentType,

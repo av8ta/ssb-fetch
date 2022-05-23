@@ -1,7 +1,8 @@
 module.exports = {
   isPost,
   isString,
-  isObject
+  isObject,
+  parseRange
 }
 
 function isPost(message) {
@@ -14,4 +15,23 @@ function isString(s) {
 
 function isObject(o) {
   return !!(typeof o === 'object' && o !== null)
+}
+
+// bytes=0-1023, 1024-1025 => [ [ '0', '1023' ], [ '1024', '1025' ] ]
+function parseRange(range) {
+  const ranges = parseRangeString(range)
+  return ranges.map(range => {
+    return range.split('-')
+  })
+}
+
+function parseRangeString(range) {
+  if (!range.includes('bytes=')) return undefined
+
+  const data = range.split('bytes=')[1]
+  if (data.includes(',')) {
+    const ranges = data.split(',')
+    return ranges
+  }
+  return [data]
 }

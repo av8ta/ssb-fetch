@@ -96,10 +96,9 @@ module.exports = async ssb => {
       }
     }
 
-    async function getBlob(id) {
+    async function getBlob(id, range) {
       try {
-        const blob = await pullBlob(sbot, id)
-        const buffer = await collectBuffers(blob)
+        const buffer = await pullBlob(sbot, id, range)
         const fileType = await FileType.fromBuffer(buffer)
         let mimetype = mime.lookup(fileType?.ext)
 
@@ -121,7 +120,7 @@ module.exports = async ssb => {
         debugHeaders('headers', headers)
 
         return {
-          statusCode: 200,
+          statusCode: range ? 206 : 200,
           headers,
           data: intoAsyncIterable(buffer)
         }
@@ -194,15 +193,6 @@ function errorResponse(error, id) {
     uiError: `Server error. Sorry about that! ${bugReport}`,
     statusCode: 500
   }
-}
-
-// from make-fetch
-async function collectBuffers(iterable) {
-  const all = []
-  for await (const buff of iterable) {
-    all.push(Buffer.from(buff))
-  }
-  return Buffer.concat(all)
 }
 
 async function* intoAsyncIterable(data) {

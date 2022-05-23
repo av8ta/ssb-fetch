@@ -53,6 +53,40 @@ test.serial('fetch a text blob & check hash', async t => {
   t.is(buff.toString('base64'), blobHash)
 })
 
+test.serial('fetch a text blob range', async t => {
+  const sbot = await Server()
+  const blobId = await addBlob(sbot, path.join(__dirname, './blob.txt'))
+  const fetch = makeSsbFetch({ sbot })
+  // "a test blob" => "a test"
+  const headers = {
+    Range: 'bytes=0-6'
+  }
+  const response = await fetch(convertLegacySSB(blobId), { headers })
+  const content = await response.text()
+  const contentType = response.headers.get('content-type')
+
+  t.is(response.status, 206)
+  t.is(contentType, 'application/octet-stream')
+  t.is(content, 'a test')
+})
+
+test.serial('fetch a text blob multirange', async t => {
+  const sbot = await Server()
+  const blobId = await addBlob(sbot, path.join(__dirname, './blob.txt'))
+  const fetch = makeSsbFetch({ sbot })
+  // "a test blob" => "at blob"
+  const headers = {
+    Range: 'bytes=0-1, 2-3, 1-2, 7-11'
+  }
+  const response = await fetch(convertLegacySSB(blobId), { headers })
+  const content = await response.text()
+  const contentType = response.headers.get('content-type')
+
+  t.is(response.status, 206)
+  t.is(contentType, 'application/octet-stream')
+  t.is(content, 'at blob')
+})
+
 test.serial('fetch a gif blob', async t => {
   const sbot = await Server()
   const blobId = await addBlob(sbot, path.join(__dirname, './agregore-demo-2.gif'))
