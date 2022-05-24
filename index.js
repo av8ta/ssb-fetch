@@ -40,7 +40,7 @@ async function ssbFetch(resource) {
   const { type, format, id } = parseUrl(url)
 
   const methods = await api
-  const { whoami, getMessage, getBlob, getFeed } = methods
+  const { getMessage, getMessageHeaders, getBlob, getBlobHeaders, getFeed, getFeedHeaders } = methods
 
   const range = rawHeaders.range ? parseRange(rawHeaders.range) : undefined
 
@@ -62,6 +62,34 @@ async function ssbFetch(resource) {
           data: intoAsyncIterable(
             '<html><body>ssb data type is not yet implemented. we do have tea though</body></html>'
           )
+        }
+    }
+  }
+
+  if (method === 'HEAD') {
+    switch (type) {
+      case 'message':
+        const msgResponse = await getMessageHeaders({ id, private: true, meta: true })
+        msgResponse.headers['Content-Length'] = msgResponse.data.length
+        delete msgResponse.data
+        return msgResponse
+
+      case 'blob':
+        const blobResponse = await getBlobHeaders(id, range)
+        blobResponse.headers['Content-Length'] = blobResponse.data.length
+        delete blobResponse.data
+        return blobResponse
+
+      case 'feed':
+        const feedResponse = await getFeedHeaders(id)
+        feedResponse.headers['Content-Length'] = feedResponse.length
+        delete feedResponse.data
+        return feedResponse
+
+      default:
+        return {
+          statusCode: 418,
+          headers: { 'Content-Type': 'text/html' }
         }
     }
   }

@@ -1,6 +1,6 @@
 {
   "name": "ssb-fetch",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "use fetch to get ssb messages",
   "main": "index.js",
   "scripts": {
@@ -21,7 +21,7 @@
   "dependencies": {
     "debug": "^4.3.4",
     "file-type": "16.5.1",
-    "make-fetch": "^2.3.1",
+    "make-fetch": "github:av8ta/make-fetch",
     "mime-types": "^2.1.35",
     "pull-stream": "^3.6.14",
     "ssb-client": "^4.9.0",

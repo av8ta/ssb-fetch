@@ -21,19 +21,29 @@ module.exports = async ssb => {
   const getMsg = promisify(sbot.get)
   const aboutLatestValues = sbot.about ? promisify(sbot.about.latestValues) : null
 
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
+    async function getFeedHeaders(id) {
+      const response = await getFeedResponse(id)
+      if (response.data) response.length = response.data.length
+      return response
+    }
+
     async function getFeed(id) {
+      const response = await getFeedResponse(id)
+      if (response.data) response.data = intoAsyncIterable(response.data)
+      return response
+    }
+
+    async function getFeedResponse(id) {
       if ((!aboutLatestValues || !sbot.backlinks) && !isDb2)
         return {
           statusCode: 404,
           headers: { 'Content-Type': JSON_MIME },
-          data: intoAsyncIterable(
-            JSON.stringify({
-              error:
-                'MissingPlugins: Profiles need ssb-about and ssb-backlinks plugins: https://github.com/ssbc/ssb-about https://github.com/ssbc/ssb-backlinks',
-              plugins: ['ssb-about', 'ssb-backlinks']
-            })
-          )
+          data: JSON.stringify({
+            error:
+              'MissingPlugins: Profiles need ssb-about and ssb-backlinks plugins: https://github.com/ssbc/ssb-about https://github.com/ssbc/ssb-backlinks',
+            plugins: ['ssb-about', 'ssb-backlinks']
+          })
         }
 
       const keys = ['name', 'image', 'description', 'location']
@@ -65,38 +75,62 @@ module.exports = async ssb => {
         return {
           statusCode: 200,
           headers: { 'Content-Type': JSON_MIME },
-          data: intoAsyncIterable(JSON.stringify({ ...profile, id }))
+          data: JSON.stringify({ ...profile, id })
         }
       } catch (error) {
         const response = errorResponse(error, id)
         debug(response)
         return {
           statusCode: response.statusCode,
-          data: intoAsyncIterable(response.uiError)
+          data: response.uiError
         }
       }
     }
 
+    async function getMessageHeaders(options) {
+      const response = await getMessageResponse(options)
+      if (response.data) response.length = response.data.length
+      return response
+    }
+
     async function getMessage(options) {
+      const response = await getMessageResponse(options)
+      if (response.data) response.data = intoAsyncIterable(response.data)
+      return response
+    }
+
+    async function getMessageResponse(options) {
       try {
         const data = await getMsg(options)
 
         return {
           statusCode: 200,
           headers: { 'Content-Type': JSON_MIME },
-          data: intoAsyncIterable(JSON.stringify(data))
+          data: JSON.stringify(data)
         }
       } catch (error) {
         const response = errorResponse(error, options.id)
         debug(response)
         return {
           statusCode: response.statusCode,
-          data: intoAsyncIterable(response.uiError)
+          data: response.uiError
         }
       }
     }
 
+    async function getBlobHeaders(id, range) {
+      const response = await getBlobResponse(id, range)
+      if (response.data) response.length = response.data.length
+      return response
+    }
+
     async function getBlob(id, range) {
+      const response = await getBlobResponse(id, range)
+      if (response.data) response.data = intoAsyncIterable(response.data)
+      return response
+    }
+
+    async function getBlobResponse(id, range) {
       try {
         const buffer = await pullBlob(sbot, id, range)
         const fileType = await FileType.fromBuffer(buffer)
@@ -122,14 +156,14 @@ module.exports = async ssb => {
         return {
           statusCode: range ? 206 : 200,
           headers,
-          data: intoAsyncIterable(buffer)
+          data: buffer
         }
       } catch (error) {
         const response = errorResponse(error, id)
         debug(response)
         return {
           statusCode: response.statusCode,
-          data: intoAsyncIterable(response.uiError)
+          data: response.uiError
         }
       }
     }
@@ -137,8 +171,11 @@ module.exports = async ssb => {
     resolve({
       whoami,
       getMessage,
+      getMessageHeaders,
       getBlob,
-      getFeed
+      getBlobHeaders,
+      getFeed,
+      getFeedHeaders
     })
   })
 }
