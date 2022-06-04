@@ -5,6 +5,13 @@ const hash = require('hash.js')
 const { promisify } = require('util')
 const { Server, publish, addBlob } = require('./ssb')
 
+
+let printHeaders = (testName, response) => {
+  for (let [key, value] of response.headers.entries()) {
+    console.log(testName + ': ', key + ': ' + value)
+  }
+}
+
 test.serial('fetch message json', async t => {
   const sbot = await Server()
   const fetch = makeSsbFetch({ sbot })
@@ -13,6 +20,8 @@ test.serial('fetch message json', async t => {
     type: 'post',
     text: '# [@bob] wrote a test message'
   })
+
+  // console.log('message id', messageId)
 
   const response = await fetch(convertLegacySSB(messageId))
   const contentType = response.headers.get('content-type')
@@ -143,6 +152,9 @@ test.serial('HEAD request of a text blob multirange returns Content-Length', asy
   const contentType = response.headers.get('content-type')
   const contentLength = response.headers.get('content-length')
 
+  // const testName = 'HEAD request of a text blob multirange returns Content-Length'
+  // printHeaders(testName, response)
+
   t.is(response.status, 206)
   t.is(contentType, 'application/octet-stream')
   t.is(contentLength, '7')
@@ -162,7 +174,7 @@ test.serial('fetch a gif blob', async t => {
   t.truthy(!sbot.db2migrate)
 })
 
-test.serial('fetch about message json', async t => {
+test.serial('fetch "about" message json', async t => {
   const sbot = await Server({ about: true, backlinks: true })
   const fetch = makeSsbFetch({ sbot })
   const whoami = promisify(sbot.whoami)

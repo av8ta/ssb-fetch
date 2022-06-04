@@ -4,10 +4,15 @@ const { promisify } = require('util')
 
 module.exports = async (sbot, id, range) => {
   const hasBlob = promisify(sbot.blobs.has)
+  const getBlobSize = promisify(sbot.blobs.size)
   const requestBlob = promisify(sbot.blobs.want)
 
   const haveBlob = await hasBlob(id)
-  if (haveBlob) return pullBlob(sbot, id, range)
+  if (haveBlob) {
+    const size = await getBlobSize(id)
+    // console.log('blob size is:', size, 'the range request is:', range)
+    return pullBlob(sbot, id, range)
+  }
   else {
     debug(`blob: ${id} not found locally. asking peers for it...`)
     const blobFound = await requestBlob(id)
@@ -27,7 +32,10 @@ async function pullBlob(sbot, id, range) {
 async function pullBlobRanges(sbot, id, range) {
   const buffers = []
   for await (const [start, end] of range) {
-    buffers.push(await collectBuffers(await pullBlobRange(sbot, id, { start: +start, end: +end })))
+    const s = +start, e = +end
+    // const s = +start, e = +end + 1
+    // console.log('start,end:', s, e)
+    buffers.push(await collectBuffers(await pullBlobRange(sbot, id, { start: s, end: e })))
   }
   return collectBuffers(buffers)
 }

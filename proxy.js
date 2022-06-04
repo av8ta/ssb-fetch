@@ -7,7 +7,9 @@ const fetch = makeSsbFetch()
 http
   .createServer((request, response) => {
     const { headers, method, url } = request
-    debug('headers', headers, 'method', method, 'url', url)
+    // console.log('request to proxy:', request)
+    debug('headers:', headers, ', method:', method, ', url:', url)
+    console.log('request headers', headers, 'method', method, 'url', url)
     let body = []
     request
       .on('error', err => {
@@ -22,30 +24,33 @@ http
         if (body) debug('body', body)
 
         // strip leading / off
-        fetch(url.slice(1), { headers })
-          .then(r => {
-            const contentType = r.headers.get('content-type')
-            const statusCode = headers.range ? 206 : 200
+        fetch(url.slice(1), { headers, method })
+          .then(fetchResponse => {
+            const contentType = fetchResponse.headers.get('content-type')
 
-            response.writeHead(statusCode, {
-              'Content-Type': contentType,
-              'X-Powered-By': 'ssb-fetch'
-            })
+            fetchResponse.headers.set('X-Powered-By', 'ssb-fetch-proxy')
+            const responseHeaders = {}
+            for (let [key, value] of fetchResponse.headers.entries()) {
+              responseHeaders[key] = value
+              console.log(`fetchResponse: ${key}: ${value}`)
+            }
+
+            response.writeHead(fetchResponse.status, responseHeaders)
 
             console.info('request headers:', headers, '\n')
             if (headers.range) console.info('request range:', headers.range, '\n')
-            console.info(`response headers:\n${response._header}`)
+            console.info(`response._header:\n${response._header}`)
 
-            if (contentType?.includes('json')) return r.json()
-            if (contentType?.includes('text')) return r.text()
-            if (contentType?.includes('application/')) return r.text()
+            if (contentType?.includes('json')) return fetchResponse.json()
+            if (contentType?.includes('text')) return fetchResponse.text()
+            if (contentType?.includes('application/')) return fetchResponse.text()
             else {
               response.writeHead(404, {
                 'Content-Type': contentType,
-                'X-Powered-By': 'ssb-fetch'
+                'X-Powered-By': 'ssb-fetch-proxy'
               })
               return {
-                error: 'content type is not impemented in proxy',
+                error: 'content type is not implemented in proxy',
                 contentType
               }
             }

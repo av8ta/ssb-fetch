@@ -162,7 +162,7 @@ test.serial('fetch a gif blob', async t => {
   t.truthy(sbot.db2migrate)
 })
 
-test.serial('fetch about message json', async t => {
+test.serial('fetch "about" message json', async t => {
   const sbot = await Server({ db2: true, aboutSelf: true, about: true })
   const fetch = makeSsbFetch({ sbot })
   /** ssb-db2 has synchronous whoami! don't promisify! */

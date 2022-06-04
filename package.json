@@ -47,7 +47,8 @@
   "ava": {
     "files": [
       "test/**/*",
-      "!**/ssb.js"
+      "!**/ssb.js",
+      "!**/fetch-save*"
     ]
   }
 }

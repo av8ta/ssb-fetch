@@ -1,6 +1,5 @@
 const makeFetch = require('make-fetch')
 const { parseUri, looksLikeLegacySSB, convertLegacySSB } = require('./uri')
-const { parseRange } = require('./utils')
 const debugUri = require('debug')('ssb-fetch:uri')
 const debugServing = require('debug')('ssb-fetch:serving')
 
@@ -31,7 +30,7 @@ function makeSsbFetch(options = {}) {
 }
 
 async function ssbFetch(resource) {
-  const { url, headers: rawHeaders, method, signal, body, session, referrer } = resource
+  const { url, headers: reqHeaders, method, signal, body, session, referrer } = resource
   debugServing('resource', resource)
 
   const isSsbURL = url.startsWith('ssb:')
@@ -39,21 +38,19 @@ async function ssbFetch(resource) {
 
   const { type, format, id } = parseUrl(url)
 
-  const methods = await api
-  const { getMessage, getMessageHeaders, getBlob, getBlobHeaders, getFeed, getFeedHeaders } = methods
-
-  const range = rawHeaders.range ? parseRange(rawHeaders.range) : undefined
+  const apiMethods = await api
+  const { getMessage, getMessageHeaders, getBlob, getBlobHeaders, getFeed, getFeedHeaders } = apiMethods
 
   if (method === 'GET') {
     switch (type) {
       case 'message':
-        return await getMessage({ id, private: true, meta: true })
+        return await getMessage({ id, private: true, meta: true }, { reqHeaders, method })
 
       case 'blob':
-        return await getBlob(id, range)
+        return await getBlob(id, { reqHeaders, method })
 
       case 'feed':
-        return await getFeed(id)
+        return await getFeed(id, { reqHeaders, method })
 
       default:
         return {
@@ -66,32 +63,39 @@ async function ssbFetch(resource) {
     }
   }
 
-  if (method === 'HEAD') {
+  else if (method === 'HEAD') {
     switch (type) {
       case 'message':
-        const msgResponse = await getMessageHeaders({ id, private: true, meta: true })
-        msgResponse.headers['Content-Length'] = msgResponse.data.length
-        delete msgResponse.data
-        return msgResponse
+        return await getMessageHeaders({ id, private: true, meta: true }, { reqHeaders, method })
 
       case 'blob':
-        const blobResponse = await getBlobHeaders(id, range)
-        blobResponse.headers['Content-Length'] = blobResponse.data.length
-        delete blobResponse.data
-        return blobResponse
+        return await getBlobHeaders(id, { reqHeaders, method })
 
       case 'feed':
-        const feedResponse = await getFeedHeaders(id)
-        feedResponse.headers['Content-Length'] = feedResponse.length
-        delete feedResponse.data
-        return feedResponse
+        return await getFeedHeaders(id, { reqHeaders, method })
 
       default:
         return {
           statusCode: 418,
-          headers: { 'Content-Type': 'text/html' }
+          headers: {
+            'Access-Control-Allow-Methods': 'GET, HEAD',
+            'Content-Type': 'text/html'
+          }
         }
     }
+  }
+
+  else return notImplemented(method)
+}
+
+function notImplemented(method) {
+  return {
+    statusCode: 405,
+    headers: {
+      'Access-Control-Allow-Methods': 'GET, HEAD',
+      'Content-Type': 'text/html'
+    },
+    data: intoAsyncIterable(`<html><body>${method} not implemented</body></html>`)
   }
 }
 
