@@ -5,7 +5,6 @@ const hash = require('hash.js')
 const { promisify } = require('util')
 const { Server, publish, addBlob } = require('./ssb')
 
-
 let printHeaders = (testName, response) => {
   for (let [key, value] of response.headers.entries()) {
     console.log(testName + ': ', key + ': ' + value)

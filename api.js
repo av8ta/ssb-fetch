@@ -90,8 +90,6 @@ module.exports = async ssb => {
       }
     }
 
-
-
     async function getMessageHeaders(options, { reqHeaders, method }) {
       const response = await getMessageResponse(options)
       response.headers = setResponseHeaders(options.id, response, method)
@@ -129,7 +127,7 @@ module.exports = async ssb => {
       const range = reqHeaders.range ? parseRange(reqHeaders.range) : undefined
       const response = await getBlobResponse(id, range)
       response.headers = setResponseHeaders(id, response, method, range)
-      if (method == 'HEAD') response.data = null // HEAD MUST not return a body 
+      if (method == 'HEAD') response.data = null // HEAD MUST not return a body
       return response
     }
 
@@ -150,7 +148,7 @@ module.exports = async ssb => {
         if (!mimetype) {
           try {
             mimetype = JSON.parse(buffer.toString()) ? JSON_MIME : undefined
-          } catch (error) { }
+          } catch (error) {}
         }
 
         const headers = {}
@@ -267,8 +265,6 @@ module.exports = async ssb => {
 /** https://httpwg.org/specs/rfc7231.html#GET */
 
 /** https://httpwg.org/specs/rfc7231.html#HEAD */
-
-
 
 function printHeaders(response) {
   for (let [key, value] of response.headers.entries()) {

@@ -61,9 +61,7 @@ async function ssbFetch(resource) {
           )
         }
     }
-  }
-
-  else if (method === 'HEAD') {
+  } else if (method === 'HEAD') {
     switch (type) {
       case 'message':
         return await getMessageHeaders({ id, private: true, meta: true }, { reqHeaders, method })
@@ -83,9 +81,7 @@ async function ssbFetch(resource) {
           }
         }
     }
-  }
-
-  else return notImplemented(method)
+  } else return notImplemented(method)
 }
 
 function notImplemented(method) {

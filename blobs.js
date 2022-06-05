@@ -12,8 +12,7 @@ module.exports = async (sbot, id, range) => {
     const size = await getBlobSize(id)
     // console.log('blob size is:', size, 'the range request is:', range)
     return pullBlob(sbot, id, range)
-  }
-  else {
+  } else {
     debug(`blob: ${id} not found locally. asking peers for it...`)
     const blobFound = await requestBlob(id)
     debug(`blob: ${id} ${blobFound ? '' : 'not'} found`)
