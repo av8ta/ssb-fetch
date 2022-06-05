@@ -32,10 +32,7 @@ async function pullBlob(sbot, id, range) {
 async function pullBlobRanges(sbot, id, range) {
   const buffers = []
   for await (const [start, end] of range) {
-    const s = +start, e = +end
-    // const s = +start, e = +end + 1
-    // console.log('start,end:', s, e)
-    buffers.push(await collectBuffers(await pullBlobRange(sbot, id, { start: s, end: e })))
+    buffers.push(await collectBuffers(await pullBlobRange(sbot, id, { start: +start, end: +end })))
   }
   return collectBuffers(buffers)
 }
