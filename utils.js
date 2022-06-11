@@ -17,12 +17,19 @@ function isObject(o) {
   return !!(typeof o === 'object' && o !== null)
 }
 
-// bytes=0-1023, 1024-1025 => [ [ '0', '1023' ], [ '1024', '1025' ] ]
+/**
+ * bytes=0-1023, 1024-1025 => [ [ 0, 1023 ], [ 1024, 1025 ] ]
+ * bytes=0-1023, 1024- => [ [ 0, 1023 ], [ 1024, -1 ] ]
+ *
+ * -1 indicates to end of blob because:
+ * blobs.getSlice(start, end+1) the end is set to zero which returns to end of blob
+ **/
 function parseRange(range) {
-  const ranges = parseRangeString(range)
-  return ranges.map(range => {
-    return range.split('-')
-  })
+  return parseRangeString(range)
+    .map(range => {
+      return range.split('-')
+    })
+    .map(([start, end]) => (end === '' ? [Number(start), -1] : [Number(start), Number(end)]))
 }
 
 function parseRangeString(range) {

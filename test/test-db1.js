@@ -109,7 +109,7 @@ test.serial('fetch a text blob range', async t => {
   const fetch = makeSsbFetch({ sbot })
   // "a test blob" => "a test"
   const headers = {
-    Range: 'bytes=0-6'
+    Range: 'bytes=0-5'
   }
   const response = await fetch(convertLegacySSB(blobId), { headers })
   const content = await response.text()
@@ -121,13 +121,31 @@ test.serial('fetch a text blob range', async t => {
   t.truthy(!sbot.db2migrate)
 })
 
+test.serial('fetch a text blob range to end', async t => {
+  const sbot = await Server()
+  const blobId = await addBlob(sbot, path.join(__dirname, './blob.txt'))
+  const fetch = makeSsbFetch({ sbot })
+  // "a test blob" => "a test"
+  const headers = {
+    Range: 'bytes=0-'
+  }
+  const response = await fetch(convertLegacySSB(blobId), { headers })
+  const content = await response.text()
+  const contentType = response.headers.get('content-type')
+
+  t.is(response.status, 206)
+  t.is(contentType, 'application/octet-stream')
+  t.is(content, 'a test blob')
+  t.truthy(!sbot.db2migrate)
+})
+
 test.serial('fetch a text blob multirange', async t => {
   const sbot = await Server()
   const blobId = await addBlob(sbot, path.join(__dirname, './blob.txt'))
   const fetch = makeSsbFetch({ sbot })
   // "a test blob" => "at blob"
   const headers = {
-    Range: 'bytes=0-1, 2-3, 1-2, 7-11'
+    Range: 'bytes=0-0, 2-2, 1-1, 7-10'
   }
   const response = await fetch(convertLegacySSB(blobId), { headers })
   const content = await response.text()
@@ -145,7 +163,7 @@ test.serial('HEAD request of a text blob multirange returns Content-Length', asy
   const fetch = makeSsbFetch({ sbot })
   // "a test blob" => "at blob"
   const headers = {
-    Range: 'bytes=0-1, 2-3, 1-2, 7-11'
+    Range: 'bytes=0-0, 2-2, 1-1, 7-10'
   }
   const response = await fetch(convertLegacySSB(blobId), { method: 'HEAD', headers })
   const contentType = response.headers.get('content-type')

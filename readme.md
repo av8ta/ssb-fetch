@@ -12,13 +12,13 @@ To run on a testnet set the `ssb_appname` env var as usual (defaults to ssb at ~
 export ssb_appname=ssb-test
 ```
 
-Creates an http server at http://locahost:8080
+Creates an http server at http://locahost:4080
 
-In insomnia you can either: `http://locahost:8080/ssb://xxx===` or set a base url in your environment:
+In insomnia you can either: `http://locahost:4080/ssb://xxx===` or set a base url in your environment:
 
 ```json
 {
-  "base_url": "http://localhost:8080/"
+  "base_url": "http://localhost:4080/"
 }
 ```
 

@@ -31,7 +31,7 @@ async function pullBlob(sbot, id, range) {
 async function pullBlobRanges(sbot, id, range) {
   const buffers = []
   for await (const [start, end] of range) {
-    buffers.push(await collectBuffers(await pullBlobRange(sbot, id, { start: +start, end: +end })))
+    buffers.push(await collectBuffers(await pullBlobRange(sbot, id, { start, end })))
   }
   return collectBuffers(buffers)
 }
@@ -39,7 +39,8 @@ async function pullBlobRanges(sbot, id, range) {
 function pullBlobRange(sbot, id, { start, end }) {
   return new Promise((resolve, reject) => {
     pull(
-      sbot.blobs.getSlice({ hash: id, start, end }),
+      /** must +1 the end to slice in correct place: https://ssbc.github.io/scuttlebutt-protocol-guide/#blobs.getSlice */
+      sbot.blobs.getSlice({ hash: id, start, end: end + 1 }),
       pull.collect((error, blob) => {
         if (error) {
           reject(error)

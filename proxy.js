@@ -42,20 +42,9 @@ http
             console.info(`response._header:\n${response._header}`)
 
             if (contentType?.includes('json')) return fetchResponse.json()
-            if (contentType?.includes('text')) return fetchResponse.text()
-            if (contentType?.includes('application/')) return fetchResponse.text()
-            else {
-              response.writeHead(404, {
-                'Content-Type': contentType,
-                'X-Powered-By': 'ssb-fetch-proxy'
-              })
-              return {
-                error: 'content type is not implemented in proxy',
-                contentType
-              }
-            }
+            else return fetchResponse.text()
           })
-          .then(res => response.end(JSON.stringify(res)))
+          .then(res => response.end(res))
       })
   })
-  .listen(8080)
+  .listen(4080)
