@@ -27,7 +27,7 @@ test.serial('fetch message json', async t => {
   const fetchedMessage = await response.json()
 
   t.is(response.status, 200)
-  t.is(contentType, 'application/json; charset=utf-8')
+  t.is(contentType, 'application/ssb+json; charset=utf-8')
   t.is(fetchedMessage.value.content.text, '# [@bob] wrote a test message')
   t.truthy(!sbot.db2migrate)
 })
@@ -46,7 +46,7 @@ test.serial('HEAD request of a json message returns Content-Length', async t => 
   const contentLength = response.headers.get('content-length')
 
   t.is(response.status, 200)
-  t.is(contentType, 'application/json; charset=utf-8')
+  t.is(contentType, 'application/ssb+json; charset=utf-8')
   t.truthy(!sbot.db2migrate)
 
   /**

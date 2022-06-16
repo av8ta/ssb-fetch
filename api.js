@@ -9,6 +9,7 @@ const debug = require('debug')('ssb-fetch')
 const debugHeaders = require('debug')('ssb-fetch:headers')
 
 const JSON_MIME = 'application/json; charset=utf-8'
+const SSB_JSON_MIME = 'application/ssb+json; charset=utf-8'
 
 module.exports = async ssb => {
   if (!ssb) Promise.reject(new Error('Must supply an ssb instance to ssb-fetch api'))
@@ -107,10 +108,12 @@ module.exports = async ssb => {
     async function getMessageResponse(options) {
       try {
         const data = await getMsg(options)
+        const isPost = data.value?.content?.type === 'post'
+        const contentType = isPost ? SSB_JSON_MIME : JSON_MIME
 
         return {
           statusCode: 200,
-          headers: { 'Content-Type': JSON_MIME },
+          headers: { 'Content-Type': contentType },
           data: JSON.stringify(data)
         }
       } catch (error) {
